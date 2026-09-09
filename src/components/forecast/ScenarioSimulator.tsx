@@ -2,14 +2,17 @@ import React, { useState } from 'react';
 import { calculateScenarioForecast } from '../../data/forecastData';
 import { Sliders, RotateCcw, Sparkles } from 'lucide-react';
 import { RupeeValue } from '../common/RupeeValue';
+import { useDemoMode } from '../../context/DemoModeContext';
 
 export const ScenarioSimulator: React.FC = () => {
+  const { currentRoute, travelDate, nationalKpis } = useDemoMode();
+
   const [searchDemand, setSearchDemand] = useState<number>(18);
   const [weatherRisk, setWeatherRisk] = useState<number>(2); // 0 to 3
   const [delayRate, setDelayRate] = useState<number>(26); // %
   const [eventSeverity, setEventSeverity] = useState<number>(4); // 1 to 5
 
-  const baselineFare = 5825;
+  const baselineFare = currentRoute ? currentRoute.baselineFare : 5825;
   const sim = calculateScenarioForecast(baselineFare, searchDemand, weatherRisk, delayRate, eventSeverity);
 
   const handleReset = () => {
@@ -28,10 +31,10 @@ export const ScenarioSimulator: React.FC = () => {
           <div className="flex items-center gap-2">
             <Sliders className="w-4 h-4 text-brand-700" />
             <h3 className="text-sm font-bold text-ink-primary tracking-tight">
-              Interactive What-If Scenario Simulator
+              Interactive What-If Scenario Simulator ({currentRoute ? currentRoute.id : 'DEL → BOM'})
             </h3>
             <span className="text-[10px] font-mono font-bold bg-amber-50 text-amber-900 px-2 py-0.5 rounded border border-amber-200">
-              Illustrative model scenario
+              Departure: {travelDate} (T+{nationalKpis.leadDays})
             </span>
           </div>
           <p className="text-xs text-ink-muted mt-0.5">
@@ -41,7 +44,7 @@ export const ScenarioSimulator: React.FC = () => {
 
         <button
           onClick={handleReset}
-          className="inline-flex items-center gap-1 text-xs text-ink-muted hover:text-brand-700 font-semibold"
+          className="inline-flex items-center gap-1 text-xs text-ink-muted hover:text-brand-700 font-semibold cursor-pointer"
         >
           <RotateCcw className="w-3.5 h-3.5" />
           <span>Reset Defaults</span>
