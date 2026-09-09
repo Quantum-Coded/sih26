@@ -14,7 +14,7 @@ import { Bot } from 'lucide-react';
 
 export const RouteIntelligence: React.FC = () => {
   const [searchParams, setSearchParams] = useSearchParams();
-  const { selectedRouteId, setSelectedRouteId, setIsCopilotOpen } = useDemoMode();
+  const { selectedRouteId, setSelectedRouteId, setIsCopilotOpen, currentRoute } = useDemoMode();
 
   const [leadTime, setLeadTime] = useState<string>('T+7');
   const [preset, setPreset] = useState<string>('Business');
@@ -31,8 +31,6 @@ export const RouteIntelligence: React.FC = () => {
     setSelectedRouteId(id);
     setSearchParams({ id });
   };
-
-  const currentRoute = ROUTES.find(r => r.id === selectedRouteId) || ROUTES[0];
 
   return (
     <div className="space-y-6">

@@ -11,7 +11,7 @@ import { ShieldCheck, RefreshCw } from 'lucide-react';
 import { useDemoMode } from '../context/DemoModeContext';
 
 export const NationalPulse: React.FC = () => {
-  const { showToast } = useDemoMode();
+  const { showToast, nationalKpis, travelDate } = useDemoMode();
 
   return (
     <div className="space-y-6">
@@ -28,7 +28,7 @@ export const NationalPulse: React.FC = () => {
         actions={
           <div className="flex items-center gap-2">
             <button
-              onClick={() => showToast('Refreshed real-time scraper queues: 1,284 quotes valid')}
+              onClick={() => showToast(`Refreshed real-time scraper queues for departure date ${travelDate}: ${nationalKpis.liveObservations} quotes valid`)}
               className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md border border-border bg-surface text-xs font-semibold text-ink-secondary hover:bg-subtle transition-all active:scale-95"
             >
               <RefreshCw className="w-3.5 h-3.5 text-ink-muted" />
@@ -46,37 +46,37 @@ export const NationalPulse: React.FC = () => {
       <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3.5">
         <KpiCard
           label="India Airfare Price Index"
-          value="117.4"
-          trend="up"
-          trendLabel="+3.8% today"
-          status="critical"
+          value={nationalKpis.indexValue}
+          trend={nationalKpis.indexTrend}
+          trendLabel={nationalKpis.indexTrendLabel}
+          status={nationalKpis.indexStatus}
           subValue="Base 2024 = 100"
           tooltip="Laspeyres weighted composite price index across 25 city pairs"
         />
 
         <KpiCard
           label="National Fare Pressure"
-          value="68 / 100"
-          trend="up"
-          trendLabel="Elevated"
-          status="elevated"
+          value={nationalKpis.farePressure}
+          trend={nationalKpis.indexTrend}
+          trendLabel={nationalKpis.farePressureTrendLabel}
+          status={nationalKpis.farePressureStatus}
           subValue="Threshold: 50"
           tooltip="Normalized pressure combining fare velocity, seat depletion, and delay rate"
         />
 
         <KpiCard
           label="Routes Under Surge"
-          value="14"
-          trend="up"
-          trendLabel="+4 today"
-          status="critical"
+          value={String(nationalKpis.routesUnderSurge)}
+          trend={nationalKpis.routesUnderSurge >= 12 ? 'up' : 'stable'}
+          trendLabel={`${nationalKpis.routesUnderSurge} active`}
+          status={nationalKpis.routesUnderSurge >= 12 ? 'critical' : nationalKpis.routesUnderSurge >= 8 ? 'elevated' : 'healthy'}
           subValue="out of 25 monitored"
           tooltip="City-pairs with fare deviation > 1.5 standard deviations"
         />
 
         <KpiCard
           label="Live Fare Observations"
-          value="1,284"
+          value={nationalKpis.liveObservations}
           trend="stable"
           trendLabel="Active"
           status="healthy"
@@ -86,8 +86,8 @@ export const NationalPulse: React.FC = () => {
 
         <KpiCard
           label="Data Quality Score"
-          value="96.8%"
-          trend="down"
+          value={nationalKpis.dataQualityScore}
+          trend="stable"
           trendLabel="Healthy"
           status="healthy"
           subValue="0 phantom fares"

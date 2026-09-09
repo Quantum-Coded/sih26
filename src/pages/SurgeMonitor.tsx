@@ -12,17 +12,17 @@ import { AlertTriangle, Search, ArrowRight } from 'lucide-react';
 import clsx from 'clsx';
 
 export const SurgeMonitor: React.FC = () => {
-  const { selectedRouteId, setSelectedRouteId } = useDemoMode();
+  const { selectedRouteId, setSelectedRouteId, routes, currentRoute, nationalKpis } = useDemoMode();
   const navigate = useNavigate();
 
   const [severityFilter, setSeverityFilter] = useState<'All' | 'Elevated' | 'High' | 'Extreme'>('All');
   const [minSurge, setMinSurge] = useState<number>(10);
   const [searchTerm, setSearchTerm] = useState<string>('');
 
-  const activeRoute = ROUTES.find(r => r.id === selectedRouteId) || ROUTES[0];
+  const activeRoute = currentRoute || routes.find(r => r.id === selectedRouteId) || routes[0];
 
-  // Filter routes under surge
-  const surgingRoutes = ROUTES.filter(r => {
+  // Filter routes under surge dynamically for selected date
+  const surgingRoutes = routes.filter(r => {
     if (r.surgePct < minSurge) return false;
     if (searchTerm && !r.id.toLowerCase().includes(searchTerm.toLowerCase())) return false;
     if (severityFilter === 'Extreme') return r.surgePct >= 25;
@@ -40,7 +40,7 @@ export const SurgeMonitor: React.FC = () => {
         badge={
           <span className="text-xs font-bold px-2.5 py-0.5 rounded-full bg-rose-50 text-rose-700 border border-rose-200 flex items-center gap-1.5">
             <AlertTriangle className="w-3.5 h-3.5 text-rose-600" />
-            14 Active Surge Sectors Detected
+            {nationalKpis.routesUnderSurge} Active Surge Sectors Detected
           </span>
         }
       />

@@ -7,21 +7,34 @@ import clsx from 'clsx';
 
 export const QuoteAuditTable: React.FC = () => {
   const [selectedQuote, setSelectedQuote] = useState<AuditQuote | null>(null);
-  const { showToast } = useDemoMode();
+  const { showToast, dateMultiplier, travelDate, nationalKpis } = useDemoMode();
+
+  const dynamicQuotes = AUDIT_QUOTES.map((q) => {
+    const total = Math.round(q.totalFare * (dateMultiplier || 1.0));
+    const taxFee = Math.round(q.tax + q.fee);
+    const base = total - taxFee;
+
+    return {
+      ...q,
+      totalFare: total,
+      baseFare: Math.max(1000, base),
+      departureDate: travelDate,
+    };
+  });
 
   return (
     <div className="bg-surface rounded-lg border border-border overflow-hidden shadow-sm-subtle flex flex-col">
-      <div className="px-5 py-4 border-b border-border flex items-center justify-between bg-white/70">
+      <div className="px-5 py-4 border-b border-border flex flex-col sm:flex-row sm:items-center justify-between bg-white/70 gap-2">
         <div>
           <h3 className="text-sm font-bold text-ink-primary tracking-tight">
             Cryptographic Quote Ledger & Raw Scraper Audit Logs
           </h3>
           <p className="text-xs text-ink-muted mt-0.5">
-            Individual fare quotes with SHA-256 validation signatures and unbundled fee component logs
+            Individual fare quotes for <span className="font-semibold text-brand-700">{travelDate}</span> (T+{nationalKpis.leadDays}) with SHA-256 validation signatures
           </p>
         </div>
         <span className="text-[11px] text-ink-muted">
-          Showing 6 representative quotes
+          Showing 6 representative verified quotes
         </span>
       </div>
 
@@ -42,7 +55,7 @@ export const QuoteAuditTable: React.FC = () => {
             </tr>
           </thead>
           <tbody className="divide-y divide-border">
-            {AUDIT_QUOTES.map((q) => (
+            {dynamicQuotes.map((q) => (
               <tr
                 key={q.quoteId}
                 onClick={() => setSelectedQuote(q)}
@@ -70,7 +83,7 @@ export const QuoteAuditTable: React.FC = () => {
                   <RupeeValue amount={q.totalFare} size="sm" />
                 </td>
                 <td className="py-3 px-3 font-mono text-xs">
-                  {q.leadTime}
+                  T+{nationalKpis.leadDays}
                 </td>
                 <td className="py-3 px-3">
                   <span

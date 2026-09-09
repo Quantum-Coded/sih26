@@ -2,6 +2,7 @@ import React from 'react';
 import { ROUTES } from '../../data/routes';
 import { AIRPORTS } from '../../data/airports';
 import { Plane, Calendar, Filter, Sparkles } from 'lucide-react';
+import { useDemoMode } from '../../context/DemoModeContext';
 
 interface RouteSelectorProps {
   selectedRouteId: string;
@@ -21,6 +22,24 @@ export const RouteSelector: React.FC<RouteSelectorProps> = ({
   onPresetChange
 }) => {
   const currentRoute = ROUTES.find(r => r.id === selectedRouteId) || ROUTES[0];
+  const { travelDate } = useDemoMode();
+
+  const formatDisplayDate = (dateStr: string) => {
+    try {
+      const [y, m, d] = dateStr.split('-').map(Number);
+      if (y && m && d) {
+        const dateObj = new Date(y, m - 1, d);
+        return dateObj.toLocaleDateString('en-GB', {
+          day: '2-digit',
+          month: 'short',
+          year: 'numeric'
+        });
+      }
+    } catch {
+      // ignore
+    }
+    return dateStr;
+  };
 
   const leadTimes = ['T+1', 'T+7', 'T+15', 'T+30', 'T+45'];
   const presets = ['Business', 'Leisure', 'Weekend'];
@@ -47,7 +66,7 @@ export const RouteSelector: React.FC<RouteSelectorProps> = ({
 
           <div className="flex items-center gap-1.5 text-xs text-ink-secondary bg-subtle px-2.5 py-1.5 rounded-md border border-border">
             <Calendar className="w-3.5 h-3.5 text-ink-muted" />
-            <span>Departure: <strong>16 Sep 2026</strong></span>
+            <span>Departure: <strong>{formatDisplayDate(travelDate)}</strong></span>
           </div>
         </div>
 

@@ -8,10 +8,10 @@ import { TrendingUp, ArrowRight } from 'lucide-react';
 
 export const TopSurgesTable: React.FC = () => {
   const navigate = useNavigate();
-  const { setSelectedRouteId } = useDemoMode();
+  const { setSelectedRouteId, routes, nationalKpis } = useDemoMode();
 
-  // Top 5 surging routes sorted by surgePct
-  const surges = [...ROUTES].sort((a, b) => b.surgePct - a.surgePct).slice(0, 5);
+  // Top 5 surging routes sorted by surgePct for selected date
+  const surges = [...routes].sort((a, b) => b.surgePct - a.surgePct).slice(0, 5);
 
   const handleRouteSelect = (routeId: string) => {
     setSelectedRouteId(routeId);
@@ -36,7 +36,7 @@ export const TopSurgesTable: React.FC = () => {
           onClick={() => navigate('/surges')}
           className="text-xs font-semibold text-brand-700 hover:text-brand-800 flex items-center gap-1"
         >
-          <span>View All 14</span>
+          <span>View All ({nationalKpis.routesUnderSurge})</span>
           <ArrowRight className="w-3 h-3" />
         </button>
       </div>

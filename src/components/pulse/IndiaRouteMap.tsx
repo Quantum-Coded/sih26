@@ -13,7 +13,7 @@ export const IndiaRouteMap: React.FC = () => {
   const [hoveredAirport, setHoveredAirport] = useState<string | null>(null);
   const [mousePos, setMousePos] = useState<{ x: number; y: number }>({ x: 0, y: 0 });
   const navigate = useNavigate();
-  const { setSelectedRouteId } = useDemoMode();
+  const { setSelectedRouteId, routes } = useDemoMode();
 
   const handleRouteClick = (routeId: string) => {
     setSelectedRouteId(routeId);
@@ -110,7 +110,7 @@ export const IndiaRouteMap: React.FC = () => {
         />
 
         {/* Route Flight Arcs */}
-        {ROUTES.map((route) => {
+        {routes.map((route) => {
           const origin = AIRPORTS[route.origin];
           const dest = AIRPORTS[route.destination];
           if (!origin || !dest) return null;

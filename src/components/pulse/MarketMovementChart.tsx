@@ -14,20 +14,39 @@ import {
   NATIONAL_APIX_30D,
   NATIONAL_APIX_90D
 } from '../../data/fareHistory';
+import { useDemoMode } from '../../context/DemoModeContext';
 import clsx from 'clsx';
 
 export const MarketMovementChart: React.FC = () => {
+  const { nationalKpis, travelDate } = useDemoMode();
   const [timeRange, setTimeRange] = useState<'7D' | '30D' | '90D'>('30D');
 
-  const chartData = {
+  const rawData = {
     '7D': NATIONAL_APIX_7D,
     '30D': NATIONAL_APIX_30D,
     '90D': NATIONAL_APIX_90D
   }[timeRange];
 
+  const currentIndex = parseFloat(nationalKpis.indexValue) || 117.4;
+
+  // Dynamically attach the active national index as the latest point
+  const chartData = rawData.map((pt, idx) => {
+    if (idx === rawData.length - 1) {
+      return {
+        ...pt,
+        apix: currentIndex,
+        date: travelDate ? `${travelDate.slice(8, 10)} ${new Date(travelDate).toLocaleString('en-US', { month: 'short' })}` : pt.date,
+        isAnomaly: currentIndex >= 115,
+        notes: `Selected departure (${travelDate}): Index at ${currentIndex}`,
+      };
+    }
+    return pt;
+  });
+
   const CustomTooltip = ({ active, payload, label }: any) => {
     if (active && payload && payload.length) {
       const point = payload[0].payload;
+      const dev = Number(((point.apix - point.baseline) / point.baseline * 100).toFixed(1));
       return (
         <div className="bg-surface border border-border p-3 rounded-lg shadow-xl text-xs space-y-1.5 min-w-[190px]">
           <div className="flex items-center justify-between border-b border-border pb-1">
@@ -52,8 +71,8 @@ export const MarketMovementChart: React.FC = () => {
           </div>
           <div className="flex items-center justify-between">
             <span className="text-ink-muted">Deviation:</span>
-            <span className="font-bold text-rose-600 tabular-nums">
-              +{((point.apix - point.baseline) / point.baseline * 100).toFixed(1)}%
+            <span className={`font-bold tabular-nums ${dev >= 0 ? 'text-rose-600' : 'text-emerald-600'}`}>
+              {dev >= 0 ? `+${dev}%` : `${dev}%`}
             </span>
           </div>
           {point.notes && (

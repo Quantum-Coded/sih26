@@ -7,10 +7,10 @@ import { TrendingDown, ArrowRight } from 'lucide-react';
 
 export const TopDeclinesTable: React.FC = () => {
   const navigate = useNavigate();
-  const { setSelectedRouteId } = useDemoMode();
+  const { setSelectedRouteId, routes } = useDemoMode();
 
-  // Top falling routes sorted by lowest surgePct
-  const declines = [...ROUTES].sort((a, b) => a.surgePct - b.surgePct).slice(0, 5);
+  // Top falling / stable routes sorted by lowest surgePct
+  const declines = [...routes].sort((a, b) => a.surgePct - b.surgePct).slice(0, 5);
 
   const handleRouteSelect = (routeId: string) => {
     setSelectedRouteId(routeId);
