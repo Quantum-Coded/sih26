@@ -28,6 +28,14 @@ export function getGrokApiKey(): string {
   return key.trim();
 }
 
+export function getGrokModel(): string {
+  const custom =
+    import.meta.env.VITE_GROK_MODEL ||
+    import.meta.env.GROK_MODEL ||
+    '';
+  return custom ? custom.trim() : 'grok-4.2-reasoning';
+}
+
 /**
  * System prompt embedding econometric domain knowledge of Indian Civil Aviation,
  * DGCA regulatory pricing dynamics, slot congestion, yield management, and IMD weather radar.
@@ -38,7 +46,7 @@ function buildSystemPrompt(context: PlatformContext): string {
   const date = context.travelDate || '2026-09-09';
   const leadDays = context.leadDays ?? 7;
 
-  return `You are APIx Intelligence Copilot, an expert civil aviation econometrician and computational intelligence engine for India's Ministry of Civil Aviation (MoCA) and Directorate General of Civil Aviation (DGCA).
+  return `You are APIx Intelligence Copilot powered by Grok 4.2 Reasoning, an expert civil aviation econometrician and computational intelligence engine for India's Ministry of Civil Aviation (MoCA) and Directorate General of Civil Aviation (DGCA).
 
 CURRENT REAL-TIME OBSERVATORY STATE:
 - Active Travel Departure Date: ${date} (Booking Lead Time: T+${leadDays} days)
@@ -66,22 +74,28 @@ export async function queryGrokReasoning(
   context: PlatformContext
 ): Promise<InvestigationResult> {
   const apiKey = getGrokApiKey();
+  const modelName = getGrokModel();
 
   // If Grok API key is configured, query xAI Grok API
   if (apiKey) {
-    try {
-      const response = await fetch(GROK_API_URL, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${apiKey}`,
-        },
-        body: JSON.stringify({
-          model: 'grok-2-latest',
-          messages: [
-            {
-              role: 'system',
-              content: buildSystemPrompt(context) + `\n\nReturn your analysis in strict JSON format with this exact structure:
+    // Try primary model (grok-4.2-reasoning), with fallback candidates if specific slug differs
+    const modelsToTry = [modelName, 'grok-4.2-reasoning', 'grok-2-latest', 'grok-beta'];
+    const uniqueModels = Array.from(new Set(modelsToTry));
+
+    for (const model of uniqueModels) {
+      try {
+        const response = await fetch(GROK_API_URL, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${apiKey}`,
+          },
+          body: JSON.stringify({
+            model,
+            messages: [
+              {
+                role: 'system',
+                content: buildSystemPrompt(context) + `\n\nReturn your analysis in strict JSON format with this exact structure:
 {
   "headline": "Short punchy executive headline summarizing the answer with numbers",
   "summary": "Detailed paragraph explaining the economic and operational mechanisms behind the query",
@@ -96,57 +110,55 @@ export async function queryGrokReasoning(
   ],
   "disclaimer": "Under MoSPI/DGCA analytical standards, statistical association reflects economic inference."
 }`,
-            },
-            {
-              role: 'user',
-              content: userQuery,
-            },
-          ],
-          temperature: 0.2,
-          response_format: { type: 'json_object' },
-        }),
-      });
+              },
+              {
+                role: 'user',
+                content: userQuery,
+              },
+            ],
+            temperature: 0.2,
+            response_format: { type: 'json_object' },
+          }),
+        });
 
-      if (response.ok) {
-        const data = await response.json();
-        const content = data.choices?.[0]?.message?.content;
-        if (content) {
-          try {
-            const parsed = JSON.parse(content);
-            return {
-              id: `grok-${Date.now()}`,
-              query: userQuery,
-              routeId: context.currentRoute?.id || 'DEL-BOM',
-              headline: parsed.headline || 'Grok AI Sector Analysis',
-              summary: parsed.summary || 'Economic analysis completed.',
-              keyDrivers: Array.isArray(parsed.keyDrivers) && parsed.keyDrivers.length > 0 ? parsed.keyDrivers : [
-                { title: 'Operational Constraints', contribution: '+32%', detail: 'Airspace and gate holds' },
-                { title: 'Dynamic Yield Escalation', contribution: '+28%', detail: 'Automated discount bucket closing' }
-              ],
-              signalsChecked: Array.isArray(parsed.signalsChecked) && parsed.signalsChecked.length > 0 ? parsed.signalsChecked : [
-                { name: 'Scraper Pipeline (142 Quotes)', status: 'verified', detail: 'Cryptographically audited' },
-                { name: 'IMD Doppler & AAI NOTAMs', status: 'verified', detail: 'Real-time feed validated' }
-              ],
-              evidenceCards: Array.isArray(parsed.evidenceCards) && parsed.evidenceCards.length > 0 ? parsed.evidenceCards : [
-                { source: 'Grok xAI Neural Engine', category: 'Live Synthesis', time: 'Just now', text: parsed.summary?.slice(0, 150) || 'Analyzed live market quotes.' }
-              ],
-              disclaimer: parsed.disclaimer || 'Statistical association detected. Under MoSPI standards, causality is an economic inference.',
-              actions: [
-                { label: 'View Fare Movement Chart', actionType: 'navigate', targetRoute: `/route?id=${context.currentRoute?.id || 'DEL-BOM'}` },
-                { label: 'Inspect Evidence Stack', actionType: 'navigate', targetRoute: '/events' },
-                { label: 'Trace Index Calculation', actionType: 'navigate', targetRoute: '/audit' }
-              ]
-            };
-          } catch (jsonErr) {
-            console.warn('Grok JSON parse fallback:', jsonErr);
+        if (response.ok) {
+          const data = await response.json();
+          const content = data.choices?.[0]?.message?.content;
+          if (content) {
+            try {
+              const parsed = JSON.parse(content);
+              return {
+                id: `grok-${Date.now()}`,
+                query: userQuery,
+                routeId: context.currentRoute?.id || 'DEL-BOM',
+                headline: parsed.headline || 'Grok 4.2 Reasoning Analysis',
+                summary: parsed.summary || 'Economic analysis completed.',
+                keyDrivers: Array.isArray(parsed.keyDrivers) && parsed.keyDrivers.length > 0 ? parsed.keyDrivers : [
+                  { title: 'Operational Constraints', contribution: '+32%', detail: 'Airspace and gate holds' },
+                  { title: 'Dynamic Yield Escalation', contribution: '+28%', detail: 'Automated discount bucket closing' }
+                ],
+                signalsChecked: Array.isArray(parsed.signalsChecked) && parsed.signalsChecked.length > 0 ? parsed.signalsChecked : [
+                  { name: 'Scraper Pipeline (142 Quotes)', status: 'verified', detail: 'Cryptographically audited' },
+                  { name: 'IMD Doppler & AAI NOTAMs', status: 'verified', detail: 'Real-time feed validated' }
+                ],
+                evidenceCards: Array.isArray(parsed.evidenceCards) && parsed.evidenceCards.length > 0 ? parsed.evidenceCards : [
+                  { source: `xAI ${model}`, category: 'Live Synthesis', time: 'Just now', text: parsed.summary?.slice(0, 150) || 'Analyzed live market quotes.' }
+                ],
+                disclaimer: parsed.disclaimer || 'Statistical association detected. Under MoSPI standards, causality is an economic inference.',
+                actions: [
+                  { label: 'View Fare Movement Chart', actionType: 'navigate', targetRoute: `/route?id=${context.currentRoute?.id || 'DEL-BOM'}` },
+                  { label: 'Inspect Evidence Stack', actionType: 'navigate', targetRoute: '/events' },
+                  { label: 'Trace Index Calculation', actionType: 'navigate', targetRoute: '/audit' }
+                ]
+              };
+            } catch (jsonErr) {
+              console.warn('Grok JSON parse fallback:', jsonErr);
+            }
           }
         }
-      } else {
-        const errorText = await response.text();
-        console.warn('Grok API responded with error status:', response.status, errorText);
+      } catch (err) {
+        console.warn(`Attempt with ${model} failed, trying next candidate:`, err);
       }
-    } catch (apiErr) {
-      console.error('Grok API call exception:', apiErr);
     }
   }
 
