@@ -1,48 +1,55 @@
 import React, { useState } from 'react';
-import { X, Bot, ArrowRight, Sparkles, Send, CheckCircle2, ChevronRight } from 'lucide-react';
+import { X, Bot, ArrowRight, Sparkles, Send, CheckCircle2, ChevronRight, Loader2, Cpu } from 'lucide-react';
 import { useDemoMode } from '../../context/DemoModeContext';
 import { useNavigate } from 'react-router-dom';
-import { PRESET_INVESTIGATIONS } from '../../data/aiResponses';
+import { PRESET_INVESTIGATIONS, InvestigationResult } from '../../data/aiResponses';
+import { queryGrokReasoning, getGrokApiKey } from '../../services/grokService';
 
 export const AiCopilotDrawer: React.FC = () => {
-  const { isCopilotOpen, setIsCopilotOpen, selectedRouteId } = useDemoMode();
+  const { isCopilotOpen, setIsCopilotOpen, selectedRouteId, currentRoute, travelDate, nationalKpis, routes } = useDemoMode();
   const [query, setQuery] = useState('');
-  const [activeInvestigationKey, setActiveInvestigationKey] = useState<string>('delhi-mumbai');
+  const [activeInvestigation, setActiveInvestigation] = useState<InvestigationResult>(
+    PRESET_INVESTIGATIONS['delhi-mumbai']
+  );
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const navigate = useNavigate();
 
+  const hasApiKey = Boolean(getGrokApiKey());
+
   if (!isCopilotOpen) return null;
 
-  const currentInvestigation = PRESET_INVESTIGATIONS[activeInvestigationKey] || PRESET_INVESTIGATIONS['delhi-mumbai'];
+  const handleExecute = async (queryText: string) => {
+    setIsAnalyzing(true);
+    try {
+      const result = await queryGrokReasoning(queryText, {
+        travelDate,
+        leadDays: nationalKpis.leadDays,
+        currentRoute,
+        nationalKpis,
+        topSurgingRoutes: routes.filter((r) => r.surgePct >= 10),
+      });
+      setActiveInvestigation(result);
+    } catch (err) {
+      console.error('Error executing Copilot reasoning:', err);
+    } finally {
+      setIsAnalyzing(false);
+    }
+  };
 
   const handleSelectPreset = (key: string) => {
-    setIsAnalyzing(true);
-    setTimeout(() => {
-      setActiveInvestigationKey(key);
-      setIsAnalyzing(false);
-    }, 450);
+    const preset = PRESET_INVESTIGATIONS[key];
+    const q = preset ? preset.query : 'Why did airfare rise today?';
+    handleExecute(q);
   };
 
   const handleSearchSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!query.trim()) return;
-
-    setIsAnalyzing(true);
-    setTimeout(() => {
-      const q = query.toLowerCase();
-      if (q.includes('surge') || q.includes('highest')) {
-        setActiveInvestigationKey('highest-surge');
-      } else if (q.includes('holiday') || q.includes('diwali')) {
-        setActiveInvestigationKey('holiday-pressure');
-      } else if (q.includes('delhi') || q.includes('mumbai') || q.includes('bom')) {
-        setActiveInvestigationKey('delhi-mumbai');
-      } else {
-        setActiveInvestigationKey('delhi-mumbai');
-      }
-      setIsAnalyzing(false);
-      setQuery('');
-    }, 500);
+    handleExecute(query.trim());
+    setQuery('');
   };
+
+  const currentInvestigation = activeInvestigation;
 
   return (
     <div className="fixed inset-0 z-50 overflow-hidden flex justify-end">
@@ -63,8 +70,9 @@ export const AiCopilotDrawer: React.FC = () => {
             <div>
               <div className="flex items-center gap-2">
                 <h3 className="font-bold text-sm tracking-tight">APIx Intelligence Copilot</h3>
-                <span className="text-[10px] bg-indigo-500/30 text-indigo-200 px-1.5 py-0.5 rounded font-mono">
-                  Grok / DGCA Engine
+                <span className="text-[10px] bg-indigo-500/30 text-indigo-200 px-1.5 py-0.5 rounded font-mono flex items-center gap-1">
+                  <Cpu className="w-3 h-3" />
+                  {hasApiKey ? 'Grok-2 AI Active' : 'APIx Engine'}
                 </span>
               </div>
               <p className="text-[11px] text-slate-300">
@@ -74,7 +82,7 @@ export const AiCopilotDrawer: React.FC = () => {
           </div>
           <button
             onClick={() => setIsCopilotOpen(false)}
-            className="p-1 rounded-md text-slate-300 hover:text-white hover:bg-white/10 transition-colors"
+            className="p-1 rounded-md text-slate-300 hover:text-white hover:bg-white/10 transition-colors cursor-pointer"
           >
             <X className="w-5 h-5" />
           </button>
@@ -90,21 +98,21 @@ export const AiCopilotDrawer: React.FC = () => {
             <div className="space-y-1.5">
               <button
                 onClick={() => handleSelectPreset('delhi-mumbai')}
-                className="w-full text-left p-2.5 rounded-md border border-border bg-subtle/50 hover:bg-brand-50 hover:border-brand-200 transition-colors text-xs font-medium text-ink-primary flex items-center justify-between group"
+                className="w-full text-left p-2.5 rounded-md border border-border bg-subtle/50 hover:bg-brand-50 hover:border-brand-200 transition-colors text-xs font-medium text-ink-primary flex items-center justify-between group cursor-pointer"
               >
                 <span>Why did Delhi–Mumbai airfare rise today?</span>
                 <ChevronRight className="w-3.5 h-3.5 text-ink-muted group-hover:text-brand-700" />
               </button>
               <button
                 onClick={() => handleSelectPreset('highest-surge')}
-                className="w-full text-left p-2.5 rounded-md border border-border bg-subtle/50 hover:bg-brand-50 hover:border-brand-200 transition-colors text-xs font-medium text-ink-primary flex items-center justify-between group"
+                className="w-full text-left p-2.5 rounded-md border border-border bg-subtle/50 hover:bg-brand-50 hover:border-brand-200 transition-colors text-xs font-medium text-ink-primary flex items-center justify-between group cursor-pointer"
               >
                 <span>Which routes are under the highest surge pressure?</span>
                 <ChevronRight className="w-3.5 h-3.5 text-ink-muted group-hover:text-brand-700" />
               </button>
               <button
                 onClick={() => handleSelectPreset('holiday-pressure')}
-                className="w-full text-left p-2.5 rounded-md border border-border bg-subtle/50 hover:bg-brand-50 hover:border-brand-200 transition-colors text-xs font-medium text-ink-primary flex items-center justify-between group"
+                className="w-full text-left p-2.5 rounded-md border border-border bg-subtle/50 hover:bg-brand-50 hover:border-brand-200 transition-colors text-xs font-medium text-ink-primary flex items-center justify-between group cursor-pointer"
               >
                 <span>Compare holiday airfare pressure (2026 vs 2025)</span>
                 <ChevronRight className="w-3.5 h-3.5 text-ink-muted group-hover:text-brand-700" />
@@ -115,9 +123,9 @@ export const AiCopilotDrawer: React.FC = () => {
           {/* Investigation Output */}
           {isAnalyzing ? (
             <div className="py-12 flex flex-col items-center justify-center text-center space-y-3">
-              <div className="w-8 h-8 rounded-full border-2 border-brand-600 border-t-transparent animate-spin" />
+              <Loader2 className="w-8 h-8 rounded-full text-brand-700 animate-spin" />
               <p className="text-xs font-medium text-ink-secondary">
-                Cross-referencing 1,284 quotes, IMD weather feeds and NOTAMs...
+                Grok AI is synthesizing live scraper quotes, IMD weather feeds and NOTAMs...
               </p>
             </div>
           ) : (
