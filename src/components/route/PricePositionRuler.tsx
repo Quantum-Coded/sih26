@@ -1,9 +1,21 @@
 import React from 'react';
 import { useDemoMode } from '../../context/DemoModeContext';
 import { RupeeValue } from '../common/RupeeValue';
+import { RouteData } from '../../data/routes';
 
-export const PricePositionRuler: React.FC = () => {
-  const { currentRoute, travelDate } = useDemoMode();
+interface PricePositionRulerProps {
+  route?: RouteData;
+  leadTime?: string;
+  preset?: string;
+}
+
+export const PricePositionRuler: React.FC<PricePositionRulerProps> = ({
+  route: propRoute,
+  leadTime,
+  preset,
+}) => {
+  const { currentRoute: contextRoute, travelDate } = useDemoMode();
+  const currentRoute = propRoute || contextRoute;
 
   const baseline = currentRoute ? currentRoute.baselineFare : 5825;
   const currentFare = currentRoute ? currentRoute.currentFare : 7480;
@@ -68,7 +80,7 @@ export const PricePositionRuler: React.FC = () => {
           style={{ left: `${markerPosPct}%` }}
         >
           <span className={`text-white text-[10px] font-bold px-1.5 py-0.5 rounded shadow-sm whitespace-nowrap ${isExtreme ? 'bg-rose-600' : isHigh ? 'bg-amber-600' : 'bg-brand-600'}`}>
-            ₹{currentFare.toLocaleString('en-IN')} ({travelDate})
+            ₹{currentFare.toLocaleString('en-IN')} ({leadTime ? `${leadTime} • ${preset || 'Standard'}` : travelDate})
           </span>
           <div className={`w-0 h-0 border-l-[4px] border-l-transparent border-r-[4px] border-r-transparent border-t-[5px] ${isExtreme ? 'border-t-rose-600' : isHigh ? 'border-t-amber-600' : 'border-t-brand-600'}`} />
         </div>

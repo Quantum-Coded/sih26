@@ -1,7 +1,8 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { ROUTES } from '../data/routes';
 import { useDemoMode } from '../context/DemoModeContext';
+import { computeRouteLeadTimeProfile } from '../utils/dynamicEconometrics';
 import { SectionHeader } from '../components/common/SectionHeader';
 import { RouteSelector } from '../components/route/RouteSelector';
 import { RouteSummaryKpis } from '../components/route/RouteSummaryKpis';
@@ -18,6 +19,11 @@ export const RouteIntelligence: React.FC = () => {
 
   const [leadTime, setLeadTime] = useState<string>('T+7');
   const [preset, setPreset] = useState<string>('Business');
+
+  // Compute reactive route pricing and KPIs based on selected Lead Time and Traveler Profile
+  const activeRoute = useMemo(() => {
+    return computeRouteLeadTimeProfile(currentRoute, leadTime, preset);
+  }, [currentRoute, leadTime, preset]);
 
   // Sync route ID from URL query if present
   useEffect(() => {
@@ -36,11 +42,17 @@ export const RouteIntelligence: React.FC = () => {
     <div className="space-y-6">
       {/* Page Header */}
       <SectionHeader
-        title={`Route Intelligence: ${currentRoute.origin} → ${currentRoute.destination}`}
-        subtitle={`Deep-dive econometric monitoring for sector ${currentRoute.id} (${currentRoute.category} corridor) with seasonal baseline benchmarks.`}
+        title={`Route Intelligence: ${activeRoute.origin} → ${activeRoute.destination}`}
+        subtitle={`Deep-dive econometric monitoring for sector ${activeRoute.id} (${activeRoute.category} corridor) across ${leadTime} advance window with ${preset} profile demand.`}
         badge={
-          <span className="text-xs font-bold px-2.5 py-0.5 rounded-full bg-rose-50 text-rose-700 border border-rose-200">
-            {currentRoute.surgePct > 0 ? `+${currentRoute.surgePct}% Surge Active` : 'Within Normal Range'}
+          <span className={`text-xs font-bold px-2.5 py-0.5 rounded-full border ${
+            activeRoute.surgePct >= 10
+              ? 'bg-rose-50 text-rose-700 border-rose-200'
+              : activeRoute.surgePct <= -5
+              ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
+              : 'bg-slate-50 text-slate-700 border-slate-200'
+          }`}>
+            {activeRoute.surgePct > 0 ? `+${activeRoute.surgePct}% Surge Active` : `${activeRoute.surgePct}% Below Baseline`} • {leadTime} ({preset})
           </span>
         }
         actions={
@@ -56,7 +68,7 @@ export const RouteIntelligence: React.FC = () => {
 
       {/* Interactive Controls Bar */}
       <RouteSelector
-        selectedRouteId={currentRoute.id}
+        selectedRouteId={activeRoute.id}
         onRouteChange={handleRouteChange}
         selectedLeadTime={leadTime}
         onLeadTimeChange={setLeadTime}
@@ -65,22 +77,42 @@ export const RouteIntelligence: React.FC = () => {
       />
 
       {/* Top 5 Route Summary KPIs */}
-      <RouteSummaryKpis route={currentRoute} />
+      <RouteSummaryKpis route={activeRoute} />
 
       {/* Primary Fare Movement & Anomaly Band Chart */}
-      <FareMovementChart routeId={currentRoute.id} />
+      <FareMovementChart
+        routeId={activeRoute.id}
+        route={activeRoute}
+        activeFare={activeRoute.currentFare}
+        leadTime={leadTime}
+      />
 
       {/* Grid: Booking Window Lead-Time Curve & Price Position Ruler */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <BookingWindowCurve />
-        <PricePositionRuler />
+        <BookingWindowCurve
+          route={activeRoute}
+          selectedLeadTime={leadTime}
+          onSelectWindow={setLeadTime}
+        />
+        <PricePositionRuler
+          route={activeRoute}
+          leadTime={leadTime}
+          preset={preset}
+        />
       </div>
 
       {/* Carrier Quotes Comparison Table */}
-      <AirlineComparisonTable />
+      <AirlineComparisonTable
+        route={activeRoute}
+        leadTime={leadTime}
+        preset={preset}
+      />
 
       {/* Fare Quote Composition & Tax Separation */}
-      <FareCompositionBar />
+      <FareCompositionBar
+        route={activeRoute}
+        leadTime={leadTime}
+      />
     </div>
   );
 };

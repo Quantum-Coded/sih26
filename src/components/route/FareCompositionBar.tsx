@@ -1,14 +1,30 @@
 import React from 'react';
 import { useDemoMode } from '../../context/DemoModeContext';
+import { RouteData } from '../../data/routes';
 
-export const FareCompositionBar: React.FC = () => {
-  const { currentRoute } = useDemoMode();
+interface FareCompositionBarProps {
+  route?: RouteData;
+  leadTime?: string;
+}
+
+export const FareCompositionBar: React.FC<FareCompositionBarProps> = ({
+  route: propRoute,
+  leadTime,
+}) => {
+  const { currentRoute: contextRoute } = useDemoMode();
+  const currentRoute = propRoute || contextRoute;
 
   const totalFare = currentRoute.currentFare;
-  const baseFare = Math.round(totalFare * 0.773);
-  const gst = Math.round(totalFare * 0.147);
-  const udf = Math.round(totalFare * 0.055);
-  const convenience = totalFare - baseFare - gst - udf;
+  const udf = 425; // Statutory airport charge fixed
+  const convenience = 350; // Payment gateway fee fixed
+  // Pure base airfare subject to 5% GST
+  const baseFare = Math.max(1000, Math.round((totalFare - udf - convenience) / 1.05));
+  const gst = totalFare - baseFare - udf - convenience;
+
+  const basePct = Number(((baseFare / totalFare) * 100).toFixed(1));
+  const gstPct = Number(((gst / totalFare) * 100).toFixed(1));
+  const udfPct = Number(((udf / totalFare) * 100).toFixed(1));
+  const conveniencePct = Number((100 - basePct - gstPct - udfPct).toFixed(1));
 
   return (
     <div className="bg-surface rounded-lg border border-border p-5 shadow-sm-subtle space-y-4">
@@ -18,7 +34,7 @@ export const FareCompositionBar: React.FC = () => {
             Fare Quote Decomposition & Statutory Tax Unbundling ({currentRoute.origin} → {currentRoute.destination})
           </h3>
           <p className="text-xs text-ink-muted mt-0.5">
-            MoSPI specification requirement: pure base fare isolation from pass-through airport charges
+            MoSPI specification requirement: pure base fare isolation from pass-through charges {leadTime ? `(${leadTime} window)` : ''}
           </p>
         </div>
         <span className="font-mono text-xs font-bold text-brand-800 bg-brand-50 px-2.5 py-1 rounded border border-brand-200">
@@ -30,29 +46,29 @@ export const FareCompositionBar: React.FC = () => {
       <div className="w-full h-5 rounded-md overflow-hidden flex bg-subtle">
         <div
           className="bg-brand-700 h-full transition-all duration-500 flex items-center justify-center text-[10px] text-white font-bold"
-          style={{ width: '77.3%' }}
-          title={`Base Airfare: ₹${baseFare.toLocaleString('en-IN')} (77.3%)`}
+          style={{ width: `${basePct}%` }}
+          title={`Base Airfare: ₹${baseFare.toLocaleString('en-IN')} (${basePct}%)`}
         >
-          Base 77%
+          Base {basePct}%
         </div>
         <div
           className="bg-amber-600 h-full transition-all duration-500 flex items-center justify-center text-[10px] text-white font-bold"
-          style={{ width: '14.7%' }}
-          title={`GST & Fuel Surcharge: ₹${gst.toLocaleString('en-IN')} (14.7%)`}
+          style={{ width: `${gstPct}%` }}
+          title={`GST & Fuel Surcharge: ₹${gst.toLocaleString('en-IN')} (${gstPct}%)`}
         >
-          GST 15%
+          GST {gstPct}%
         </div>
         <div
           className="bg-indigo-600 h-full transition-all duration-500 flex items-center justify-center text-[10px] text-white font-bold"
-          style={{ width: '5.5%' }}
-          title={`User Development Fee (UDF): ₹${udf.toLocaleString('en-IN')} (5.5%)`}
+          style={{ width: `${udfPct}%` }}
+          title={`User Development Fee (UDF): ₹${udf.toLocaleString('en-IN')} (${udfPct}%)`}
         >
           UDF
         </div>
         <div
           className="bg-slate-500 h-full transition-all duration-500 flex items-center justify-center text-[10px] text-white font-bold"
-          style={{ width: '2.5%' }}
-          title={`Convenience Fee: ₹${convenience.toLocaleString('en-IN')} (2.5%)`}
+          style={{ width: `${conveniencePct}%` }}
+          title={`Convenience Fee: ₹${convenience.toLocaleString('en-IN')} (${conveniencePct}%)`}
         />
       </div>
 

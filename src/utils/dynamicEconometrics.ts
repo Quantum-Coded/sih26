@@ -195,3 +195,73 @@ export function getNationalKpis(travelDate: string): NationalKpis {
     isWeekend,
   };
 }
+
+/**
+ * Dynamically recalculate sector KPIs and pricing based on Lead Time (T+1 to T+45)
+ * and Traveler Profile (Business, Leisure, Weekend)
+ */
+export function computeRouteLeadTimeProfile(
+  baseRoute: RouteData,
+  leadTime: string = 'T+7',
+  preset: string = 'Business'
+): RouteData {
+  if (!baseRoute) return baseRoute;
+
+  const base = baseRoute.baselineFare;
+  const baseSurge = baseRoute.surgePct;
+
+  // 1. Lead Time Multiplier (Advance purchase yield curve)
+  let leadFactor = 1.0;
+  if (leadTime === 'T+1') {
+    leadFactor = 1.38 + Math.max(0, baseSurge * 0.005); // Last-minute surge (+38% to +50%)
+  } else if (leadTime === 'T+3') {
+    leadFactor = 1.22 + Math.max(0, baseSurge * 0.003); // 3 days out (+22%)
+  } else if (leadTime === 'T+7') {
+    leadFactor = 1.0 + (baseSurge / 100); // Standard 7-day benchmark
+  } else if (leadTime === 'T+15') {
+    leadFactor = 0.98 + (baseSurge * 0.25 / 100); // 2 weeks prior (~0.98x - 1.05x)
+  } else if (leadTime === 'T+30') {
+    leadFactor = 0.90; // Early bird tier (-10%)
+  } else if (leadTime === 'T+45') {
+    leadFactor = 0.82; // Deep advance booking discount (-18%)
+  }
+
+  // 2. Profile Multiplier (Elasticity and demand preferences)
+  let profileFactor = 1.0;
+  let pressureDelta = 0;
+  if (preset === 'Business') {
+    profileFactor = 1.06; // Corporate peak hour demand (+6%)
+    pressureDelta = +6;
+  } else if (preset === 'Leisure') {
+    profileFactor = 0.94; // Elastic off-peak leisure (-6%)
+    pressureDelta = -8;
+  } else if (preset === 'Weekend') {
+    profileFactor = 1.09; // Weekend getaway demand (+9%)
+    pressureDelta = +8;
+  }
+
+  const effectiveCurrentFare = Math.round(base * leadFactor * profileFactor);
+  const effectiveSurgePct = Number((((effectiveCurrentFare - base) / base) * 100).toFixed(1));
+
+  // Dynamic pressure score (bounded 12 to 98)
+  const pressureRatio = effectiveCurrentFare / (baseRoute.currentFare || base);
+  const effectivePressure = Math.max(
+    12,
+    Math.min(98, Math.round(baseRoute.pressureScore * pressureRatio + pressureDelta))
+  );
+
+  // Dynamic Z-score statistical distance
+  const effectiveZScore = Number((effectiveSurgePct / 12).toFixed(2));
+
+  const effectiveTrend: 'up' | 'down' | 'stable' =
+    effectiveSurgePct > 3 ? 'up' : effectiveSurgePct < -3 ? 'down' : 'stable';
+
+  return {
+    ...baseRoute,
+    currentFare: effectiveCurrentFare,
+    surgePct: effectiveSurgePct,
+    pressureScore: effectivePressure,
+    zScore: effectiveZScore,
+    trend: effectiveTrend,
+  };
+}

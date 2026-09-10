@@ -11,17 +11,27 @@ import {
   ReferenceLine
 } from 'recharts';
 import { DEL_BOM_30D_HISTORY } from '../../data/fareHistory';
+import { RouteData } from '../../data/routes';
 import { useDemoMode } from '../../context/DemoModeContext';
 
 interface FareMovementChartProps {
   routeId: string;
+  route?: RouteData;
+  activeFare?: number;
+  leadTime?: string;
 }
 
-export const FareMovementChart: React.FC<FareMovementChartProps> = ({ routeId }) => {
+export const FareMovementChart: React.FC<FareMovementChartProps> = ({
+  routeId,
+  route: propRoute,
+  activeFare,
+  leadTime,
+}) => {
   const { currentRoute, travelDate, nationalKpis } = useDemoMode();
 
-  const baseline = currentRoute ? currentRoute.baselineFare : 5825;
-  const currentFare = currentRoute ? currentRoute.currentFare : 7480;
+  const route = propRoute || currentRoute;
+  const baseline = route ? route.baselineFare : 5825;
+  const currentFare = activeFare || (route ? route.currentFare : 7480);
   const scaleRatio = baseline / 5825;
 
   // Scale 30-day historical points to match the current route and anchor the latest point to currentFare
@@ -52,7 +62,7 @@ export const FareMovementChart: React.FC<FareMovementChartProps> = ({ routeId })
           <div className="flex items-center justify-between border-b border-border pb-1">
             <span className="font-bold text-ink-primary">{label}</span>
             <span className="text-[10px] font-mono px-1.5 py-0.2 rounded bg-subtle text-ink-muted">
-              T+{nationalKpis.leadDays} Lead Time
+              {leadTime || `T+${nationalKpis.leadDays}`} Lead Time
             </span>
           </div>
 
@@ -185,7 +195,7 @@ export const FareMovementChart: React.FC<FareMovementChartProps> = ({ routeId })
 
       <div className="mt-3 pt-3 border-t border-border flex flex-wrap items-center justify-between text-xs text-ink-muted">
         <span>Current Sector: <strong>{currentRoute ? `${currentRoute.origin} → ${currentRoute.destination}` : routeId}</strong> • Baseline: <strong>₹{baseline.toLocaleString('en-IN')}</strong></span>
-        <span>Lead Time: <strong className="text-brand-700">T+{nationalKpis.leadDays} Days ({travelDate})</strong></span>
+        <span>Lead Time: <strong className="text-brand-700">{leadTime ? `${leadTime} (${travelDate})` : `T+${nationalKpis.leadDays} Days (${travelDate})`}</strong></span>
       </div>
     </div>
   );

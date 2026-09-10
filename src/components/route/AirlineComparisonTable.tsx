@@ -1,54 +1,65 @@
 import React from 'react';
 import { RupeeValue } from '../common/RupeeValue';
 import { useDemoMode } from '../../context/DemoModeContext';
+import { RouteData } from '../../data/routes';
 
-export const AirlineComparisonTable: React.FC = () => {
-  const { currentRoute, travelDate, nationalKpis } = useDemoMode();
-  const route = currentRoute;
+interface AirlineComparisonTableProps {
+  route?: RouteData;
+  leadTime?: string;
+  preset?: string;
+}
+
+export const AirlineComparisonTable: React.FC<AirlineComparisonTableProps> = ({
+  route: propRoute,
+  leadTime = 'T+7',
+  preset = 'Business',
+}) => {
+  const { currentRoute, travelDate } = useDemoMode();
+  const route = propRoute || currentRoute;
   const currentFare = route ? route.currentFare : 7480;
   const surgePct = route ? route.surgePct : 28.4;
   const isSurging = surgePct >= 12;
 
-  // Carrier spread multipliers based on empirical market positioning
+  // Carrier spread multipliers based on empirical market positioning & traveler profile
   const carriers = [
     {
       code: '6E',
       name: 'IndiGo Airlines',
       flights: Math.round((route ? route.dailyQuotesCount : 840) * 0.44 / 15),
-      mult: 0.96,
-      availability: isSurging ? 'Constrained' : 'Available',
+      mult: preset === 'Business' ? 0.98 : 0.94,
+      availability: leadTime === 'T+1' ? 'Critical Seats' : isSurging ? 'Constrained' : 'Available',
       surgeAdd: -3.2,
     },
     {
       code: 'AI',
       name: 'Air India',
       flights: Math.round((route ? route.dailyQuotesCount : 840) * 0.26 / 15),
-      mult: 1.04,
-      availability: isSurging ? 'Tight' : 'Available',
+      mult: preset === 'Business' ? 1.06 : 1.02,
+      availability: leadTime === 'T+1' ? 'Critical Seats' : isSurging ? 'Tight' : 'Available',
       surgeAdd: +4.1,
     },
     {
       code: 'UK',
       name: 'Vistara',
       flights: Math.round((route ? route.dailyQuotesCount : 840) * 0.16 / 15),
-      mult: 1.08,
-      availability: isSurging ? 'Critical Seats' : 'Moderate',
+      mult: preset === 'Business' ? 1.11 : 1.05,
+      availability: leadTime === 'T+1' ? 'Last Seats' : isSurging ? 'Critical Seats' : 'Moderate',
       surgeAdd: +7.5,
     },
     {
       code: 'QP',
       name: 'Akasa Air',
       flights: Math.round((route ? route.dailyQuotesCount : 840) * 0.08 / 15),
-      mult: 0.92,
-      availability: 'Available',
+      mult: preset === 'Leisure' ? 0.89 : 0.92,
+      availability: leadTime === 'T+1' ? 'Constrained' : 'Available',
       surgeAdd: -5.8,
     },
     {
       code: 'SG',
       name: 'SpiceJet',
       flights: Math.round((route ? route.dailyQuotesCount : 840) * 0.06 / 15),
-      mult: 0.94,
-      availability: 'Moderate',
+      mult: preset === 'Leisure' ? 0.90 : 0.94,
+      availability: leadTime === 'T+1' ? 'Tight' : 'Moderate',
       surgeAdd: -4.0,
     },
   ];
@@ -85,7 +96,7 @@ export const AirlineComparisonTable: React.FC = () => {
             Carrier-Wise Quote Distribution ({route ? route.id : 'DEL → BOM'})
           </h3>
           <p className="text-xs text-ink-muted mt-0.5">
-            Normalized quotes across 5 active carriers captured for departure date <span className="font-semibold text-brand-700">{travelDate}</span>
+            Normalized quotes across 5 active carriers for <span className="font-semibold text-brand-700">{travelDate}</span> ({leadTime} window • {preset} profile)
           </p>
         </div>
         <span className="text-[11px] font-mono text-ink-muted">

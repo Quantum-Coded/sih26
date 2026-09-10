@@ -1,19 +1,31 @@
 import React from 'react';
 import { RupeeValue } from '../common/RupeeValue';
 import { useDemoMode } from '../../context/DemoModeContext';
+import { RouteData } from '../../data/routes';
 
-export const BookingWindowCurve: React.FC = () => {
+interface BookingWindowCurveProps {
+  route?: RouteData;
+  selectedLeadTime?: string;
+  onSelectWindow?: (window: string) => void;
+}
+
+export const BookingWindowCurve: React.FC<BookingWindowCurveProps> = ({
+  route: propRoute,
+  selectedLeadTime,
+  onSelectWindow,
+}) => {
   const { currentRoute, travelDate, nationalKpis } = useDemoMode();
-  const route = currentRoute;
+  const route = propRoute || currentRoute;
   const leadDays = nationalKpis.leadDays;
 
-  // Determine active booking window from selected travel date
+  // Determine active booking window from selected leadTime prop or fallback to travel date
   const activeWindowKey =
-    leadDays <= 1 ? 'T+1' :
+    selectedLeadTime ||
+    (leadDays <= 1 ? 'T+1' :
     leadDays <= 3 ? 'T+3' :
     leadDays <= 7 ? 'T+7' :
     leadDays <= 15 ? 'T+15' :
-    leadDays <= 30 ? 'T+30' : 'T+45';
+    leadDays <= 30 ? 'T+30' : 'T+45');
 
   const base = route ? route.baselineFare : 5825;
   const currentSurge = route ? route.surgePct : 28.4;
@@ -92,10 +104,11 @@ export const BookingWindowCurve: React.FC = () => {
           return (
             <div
               key={item.window}
-              className={`p-2 rounded-md transition-all ${
+              onClick={() => onSelectWindow?.(item.window)}
+              className={`p-2 rounded-md transition-all cursor-pointer ${
                 isSelectedWindow
-                  ? 'bg-brand-50/70 border border-brand-200 ring-1 ring-brand-300'
-                  : 'hover:bg-subtle/50'
+                  ? 'bg-brand-50/70 border border-brand-200 ring-1 ring-brand-300 shadow-xs'
+                  : 'hover:bg-subtle/70'
               }`}
             >
               <div className="flex items-center justify-between text-xs mb-1">
@@ -106,7 +119,7 @@ export const BookingWindowCurve: React.FC = () => {
                   <span className="text-[11px] text-ink-muted hidden sm:inline">({item.elasticityLabel})</span>
                   {isSelectedWindow && (
                     <span className="text-[10px] font-bold px-1.5 py-0.2 bg-brand-600 text-white rounded">
-                      Selected Target Date
+                      Active Lead Window
                     </span>
                   )}
                 </div>
