@@ -11,7 +11,8 @@ import {
   History,
   Bot,
   Terminal,
-  Layers
+  Layers,
+  BarChart3,
 } from 'lucide-react';
 import clsx from 'clsx';
 import { useDemoMode } from '../../context/DemoModeContext';
@@ -23,6 +24,7 @@ const NAV_ITEMS = [
   { name: 'Event Intelligence', path: '/events', icon: CalendarDays },
   { name: 'Fare Forecast', path: '/forecast', icon: LineChart },
   { name: 'Policy Analytics', path: '/policy', icon: Landmark },
+  { name: 'Power BI Analytics', path: '/powerbi', icon: BarChart3, isBi: true },
   { name: 'Audit & Data Trust', path: '/audit', icon: ShieldCheck },
   { name: 'Validation / Backtest', path: '/backtest', icon: History },
   { name: 'Ask APIx', path: '/ask', icon: Bot, isAi: true },
@@ -75,7 +77,16 @@ export const Sidebar: React.FC = () => {
               }
             >
               <div className="flex items-center gap-3">
-                <Icon className={clsx('w-4 h-4 transition-colors', item.isAi ? 'text-indigo-400' : 'text-slate-400 group-hover:text-slate-200')} />
+                <Icon
+                  className={clsx(
+                    'w-4 h-4 transition-colors',
+                    item.isAi
+                      ? 'text-indigo-400'
+                      : (item as any).isBi
+                      ? 'text-amber-400'
+                      : 'text-slate-400 group-hover:text-slate-200'
+                  )}
+                />
                 <span>{item.name}</span>
               </div>
               <div className="flex items-center gap-1.5">
@@ -92,6 +103,11 @@ export const Sidebar: React.FC = () => {
                 {item.isAi && (
                   <span className="text-[10px] font-medium px-1.5 py-0.2 rounded bg-indigo-500/20 text-indigo-300 border border-indigo-500/30">
                     AI
+                  </span>
+                )}
+                {(item as any).isBi && (
+                  <span className="text-[10px] font-bold px-1.5 py-0.2 rounded bg-amber-500/20 text-amber-300 border border-amber-500/30">
+                    BI
                   </span>
                 )}
               </div>

@@ -24,6 +24,7 @@ import {
   ExternalLink,
 } from 'lucide-react';
 import clsx from 'clsx';
+import { PowerBiDashboardModal, PowerBiLogo } from '../powerbi/PowerBiDashboardModal';
 
 interface GeoFeature {
   type: string;
@@ -49,6 +50,7 @@ export const IndiaRouteMap: React.FC = () => {
   const [mousePos, setMousePos] = useState<{ x: number; y: number }>({ x: 0, y: 0 });
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [showDistricts, setShowDistricts] = useState(true);
+  const [isPowerBiOpen, setIsPowerBiOpen] = useState(false);
 
   const containerRef = useRef<HTMLDivElement>(null);
   const navigate = useNavigate();
@@ -702,11 +704,22 @@ export const IndiaRouteMap: React.FC = () => {
           </span>
         </div>
 
-        {/* User Option to Open in Full Screen at Bottom Corner */}
+        {/* Action buttons at Bottom Corner */}
         <div className="flex items-center gap-2 flex-shrink-0">
-          <span className="hidden lg:inline font-mono text-[10px] text-slate-400">
+          <span className="hidden xl:inline font-mono text-[10px] text-slate-400">
             Source: Live Ingestion Engine
           </span>
+
+          {/* Connect to Power BI Button */}
+          <button
+            onClick={() => setIsPowerBiOpen(true)}
+            className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded bg-[#F2C811]/15 hover:bg-[#F2C811]/25 text-[#F2C811] hover:text-[#f8d438] border border-[#F2C811]/35 text-[11px] font-semibold transition-all shadow-sm active:scale-95"
+            title="Connect & open Microsoft Power BI Executive Dashboard"
+          >
+            <PowerBiLogo className="w-3.5 h-3.5" />
+            <span>Connect to Power BI</span>
+          </button>
+
           <button
             onClick={toggleFullscreen}
             className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded bg-slate-800 hover:bg-slate-700 text-slate-200 hover:text-white border border-slate-700 text-[11px] font-semibold transition-all shadow-sm active:scale-95"
@@ -726,6 +739,12 @@ export const IndiaRouteMap: React.FC = () => {
           </button>
         </div>
       </div>
+
+      {/* Microsoft Power BI Embedded Dashboard Modal */}
+      <PowerBiDashboardModal
+        isOpen={isPowerBiOpen}
+        onClose={() => setIsPowerBiOpen(false)}
+      />
     </div>
   );
 };

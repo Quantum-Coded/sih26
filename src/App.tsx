@@ -14,6 +14,7 @@ import { AuditDataTrust } from './pages/AuditDataTrust';
 import { ValidationBacktest } from './pages/ValidationBacktest';
 import { AskApix } from './pages/AskApix';
 import { GovernmentApiExplorer } from './pages/GovernmentApiExplorer';
+import { PowerBiAnalytics } from './pages/PowerBiAnalytics';
 
 export const App: React.FC = () => {
   return (
@@ -28,6 +29,7 @@ export const App: React.FC = () => {
             <Route path="events" element={<EventIntelligence />} />
             <Route path="forecast" element={<FareForecast />} />
             <Route path="policy" element={<PolicyAnalytics />} />
+            <Route path="powerbi" element={<PowerBiAnalytics />} />
             <Route path="audit" element={<AuditDataTrust />} />
             <Route path="backtest" element={<ValidationBacktest />} />
             <Route path="ask" element={<AskApix />} />
